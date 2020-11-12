@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<link rel="stylesheet" href="style.css">
+	<title>To Do List</title>
+</head>
+
+<body>
+	<div class="container">
+		<div class="todo_list">
+			<h1>To Do List</h1>
+			<p>Введите задачу и дедлайн (выберите на календаре или в формате гггг-мм-дд) и нажмите кнопку Добавить</p>
+			<div class="date"></div>
+			<div class="create_new_todo">
+				<div class="taskInput">
+					<input type="text" class="message" placeholder="Описание">
+					<input type="date" min="2020-11-12" id="date" placeholder="Дата">
+				</div>
+				<button class="add">Добавить</button>
+				<div class="filters">
+					<button class="filter all">Все</button>
+					<button class="filter isDone">Сделано</button>
+					<button class="filter isNotDone">Не сделано</button>
+					<button class="filter today">Сегодня</button>
+					<button class="filter thisWeek">На этой неделе</button>
+					<div class="setDateBttn">
+						<label for="date" style="color: black;">По дате</label>
+						<input type="date" min="2020-11-12" id="setDate" placeholder="Дата">
+						<button class="setDateButton">Показать</button>
+					</div>
+				</div>
+			</div>
+			<div class="wrapper">
+				<ul class="toDo"></ul>
+			</div>
+		</div>
+	</div>
+	<script src="script.js"></script>
+</body>
+
+</html>
