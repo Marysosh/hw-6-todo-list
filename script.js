@@ -21,17 +21,9 @@ class TaskManager {
 	displayTasks() {
 		let taskManager = this;
 		let displayTask = '';
-		if (this.tasksList.length === 0) {toDo.innerHTML = ''; return};
-		this.tasksList.forEach(function(item, i){
-			displayTask += `
-			<li>
-				<input type='checkbox' id='item_${i}' ${item.isDone? 'checked' : ''}>
-				<label for='item_${i}'>${item.date +' '+ item.name}</label>
-				<button class="delete" id='button_item_${i}'><img src="img/basket.svg"></button>
-			</li>
-			`;
-			toDo.innerHTML = displayTask;
-			});
+		toDo.innerHTML = ''; 
+		this.tasksList.forEach((task, number) => createNewTask(task, number));
+
 		this.tasksList.forEach(function(item, i){
 			let newButton = document.getElementById('button_item_'+i);
 			newButton.addEventListener('click', function() {
@@ -44,33 +36,12 @@ class TaskManager {
 		});
 	}
 
-	filterIsDone(status) {
-		if (status === isDone) {
-			let newTasksList = this.tasksList;
-			this.tasksList = this.tasksList.filter(task => task.isDone===true);
-			this.displayTasks();
-			this.tasksList = newTasksList;
-		} else {
-			let newTasksList = this.tasksList;
-			this.tasksList = this.tasksList.filter(task => task.isDone===false);
-			this.displayTasks();
-			this.tasksList = newTasksList;
-		}
+	filterTasks(filterFunction) {
+		let newTasksList = this.tasksList;
+		this.tasksList = this.tasksList.filter(filterFunction);
+		this.displayTasks();
+		this.tasksList = newTasksList;
 	}
-
-	filterDate(date, exactDay) {
-		if (exactDay) {
-			let newTasksList = this.tasksList;
-			this.tasksList = this.tasksList.filter(task => task.date.split('.').reverse().join('-') == date);
-			this.displayTasks();
-			this.tasksList = newTasksList;
-		} else {
-			let newTasksList = this.tasksList;
-			this.tasksList = this.tasksList.filter(task => new Date(task.date.split('.').reverse().join('-')) <= new Date(date));
-			this.displayTasks();
-			this.tasksList = newTasksList;
-		}	
-}
 }
 
 class Task {
@@ -82,53 +53,146 @@ class Task {
 	}
 }
 
+function filterByStatus(isDone) {
+	return task => task.isDone === isDone;
+}
+
+function filterByDate(date, exactDay) {
+	if (exactDay) {
+		return task => task.date.split('.').reverse().join('-') == date
+	} else {
+		return task => new Date(task.date.split('.').reverse().join('-')) <= new Date(date)
+	}
+}
+
+function createNewTask(task, number) {
+	let newTask = document.createElement('li');
+	let taskInput = document.createElement('input');
+	let taskLabel = document.createElement('label');
+	let taskButton = document.createElement('button');
+	let buttonImg = document.createElement('img');
+
+	taskInput.type = 'checkbox';
+	taskInput.id = 'item_' + number;
+	taskInput.checked = task.isDone;
+
+	taskLabel.innerHTML = task.date +' '+ task.name;
+	taskLabel.for = 'item_' + number;
+
+	buttonImg.setAttribute('src', 'img/basket.svg');
+
+	taskButton.setAttribute('class', 'delete');
+	taskButton.id = 'button_item_' + number;
+	taskButton.append(buttonImg);
+
+	newTask.append(taskInput);
+	newTask.append(taskLabel);
+	newTask.append(taskButton);
+
+	toDo.append(newTask);
+}
+
+class ButtonListenerFactory {
+	constructor() {
+		this.createButton = function(listenerType) {
+			let displayButton;
+			if (listenerType === 'addButton') displayButton = new AddBtn();
+			else if (listenerType === 'all') displayButton = new AllBtn();
+			else if (listenerType === 'isDone') displayButton = new IsDoneBtn();
+			else if (listenerType === 'isNotDone') displayButton = new IsNotDoneBtn();
+			else if (listenerType === 'todayFilter') displayButton = new TodayFilterBtn();
+			else if (listenerType === 'thisWeekFilter') displayButton = new ThisWeekBtn();
+			else displayButton = new SetDateFilterBtn();
+			displayButton.node.addEventListener('click', function(){
+				displayButton.buttonMethod();
+			})
+			return displayButton
+		}
+	}
+}
+
+class AddBtn {
+	constructor() {
+		this.node = document.querySelector('.add');
+		this.buttonMethod = () => {
+			let name = addMessage.value;
+			let dateArray = addDate.value.split('-');
+			let date = dateArray.reverse().join('.');
+			return tasksList.addTask(name, date)
+		};
+	}
+}
+
+class AllBtn {
+	constructor() {
+		this.node = document.querySelector('.all');
+		this.buttonMethod = () => tasksList.displayTasks();
+	}
+}
+
+class IsDoneBtn {
+	constructor() {
+		this.node = document.querySelector('.isDone');
+		this.buttonMethod = () => tasksList.filterTasks(filterByStatus(true));
+	}
+}
+
+class IsNotDoneBtn {
+	constructor() {
+		this.node = document.querySelector('.isNotDone');
+		this.buttonMethod = () => tasksList.filterTasks(filterByStatus(false));
+	}
+}
+
+class TodayFilterBtn {
+	constructor() {
+		this.node = document.querySelector('.today');
+		this.buttonMethod = () => {
+			let today = new Date();
+			today = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate();
+			return tasksList.filterTasks(filterByDate(today, 0));
+		}
+	}
+}
+
+class ThisWeekBtn {
+	constructor() {
+		this.node = document.querySelector('.thisWeek');
+		this.buttonMethod = () => {
+			let today = new Date();
+			let thisWeek = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 168, 0, 0, 0);
+			let thisWeekArray = [thisWeek.getFullYear(),thisWeek.getMonth()+1,thisWeek.getDate()];
+			thisWeek = thisWeekArray.join('-').replace(/(^|\/)(\d)(?=\/)/g,"$10$2");
+			return tasksList.filterTasks(filterByDate(thisWeek, 0));
+		}
+	}
+}
+
+class SetDateFilterBtn {
+	constructor() {
+		this.node = document.querySelector('.setDateButton');
+		this.buttonMethod = () => {
+			let setDate = setDateInput.value;
+			return tasksList.filterTasks(filterByDate(setDate, 1));
+		}
+	}
+}
+
+function initial() {
+	const factory = new ButtonListenerFactory();
+	const addButton = factory.createButton('addButton');
+	const all = factory.createButton('all');
+	const isDone = factory.createButton('isDone');
+	const isNotDone = factory.createButton('isNotDone');
+	const todayFilter = factory.createButton('todayFilter');
+	const thisWeekFilter = factory.createButton('thisWeekFilter');
+	const setDateFilter = factory.createButton('setDateFilter');
+}
+
 let toDo = document.querySelector('.toDo');
 let addMessage = document.querySelector('.message');
-let addButton = document.querySelector('.add');
 let addDate = document.getElementById('date');
-let all = document.querySelector('.all');
-let isDone = document.querySelector('.isDone');
-let isNotDone = document.querySelector('.isNotDone');
-let todayFilter = document.querySelector('.today');
-let thisWeekFilter = document.querySelector('.thisWeek');
-let setDateFilter = document.querySelector('.setDateButton');
 let setDateInput = document.getElementById('setDate');
 let tasksList = new TaskManager();
 
-addButton.addEventListener('click', function() {
-	let name = addMessage.value;
-	let dateArray = addDate.value.split('-');
-	let date = dateArray.reverse().join('.');
-	tasksList.addTask(name, date);
-});
-
-all.addEventListener('click', function() {
-	tasksList.displayTasks();
-});
-
-isDone.addEventListener('click', function() {
-	tasksList.filterIsDone(isDone);
-});
-
-isNotDone.addEventListener('click', function() {
-	tasksList.filterIsDone(isNotDone);
-});
-
-todayFilter.addEventListener('click', function() {
-	let today = new Date();
-	today = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate();
-	tasksList.filterDate(today, 0);
-});
-
-thisWeekFilter.addEventListener('click', function() {
-	let today = new Date();
-	let thisWeek = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 168, 0, 0, 0);
-	let thisWeekArray = [thisWeek.getFullYear(),thisWeek.getMonth()+1,thisWeek.getDate()];
-	thisWeek = thisWeekArray.join('-').replace(/(^|\/)(\d)(?=\/)/g,"$10$2");
-	tasksList.filterDate(thisWeek, 0);
-});
-
-setDateFilter.addEventListener('click', function() {
-	let setDate = setDateInput.value;
-	tasksList.filterDate(setDate, 1);
-});
+initial();
